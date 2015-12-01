@@ -109,12 +109,28 @@ class InfobloxObjectManipulator(object):
             return self.create_multi_tenant_dns_view(net_view, tenant)
 
     def create_zone_auth(self, fqdn, dns_view):
+        extra_data = {'ns_group': self.connector.ns_group}
+
+        if self.connector.supports_restart_if_needed:
+            extra_data['restart_if_needed'] = True
+
+        if fqdn.endswith('.in-addr.arpa'):
+            extra_data['zone_format'] = 'IPV4'
+            # if it is a RFC-2317 domain it will have
+            # more segments than a class C would
+            if fqdn.count('.') > 4:
+                parts = fqdn.split('.')[0:-2]
+                extra_data['prefix'] = parts[0]
+                parts.reverse()
+                fqdn = '.'.join(parts)
+        elif fqdn.endswith('ip6.arpa'):
+            extra_data['zone_format'] = 'IPV6'
+
         try:
             self._create_infoblox_object(
                 'zone_auth',
                 {'fqdn': fqdn, 'view': dns_view},
-                {'ns_group': self.connector.ns_group,
-                 'restart_if_needed': True},
+                extra_data,
                 check_if_exists=True)
         except exc.InfobloxCannotCreateObject as e:
             LOG.warning(e)

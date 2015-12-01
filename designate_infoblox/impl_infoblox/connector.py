@@ -69,6 +69,12 @@ class Infoblox(object):
         self.session.auth = (self.username, self.password)
         self.session.verify = self.sslverify
 
+    @property
+    def supports_restart_if_needed(self):
+        if '/wapi/v2' in self.wapi:
+            return True
+        return False
+
     def _construct_url(self, relative_path, query_params=None, extattrs=None):
         if query_params is None:
             query_params = {}
